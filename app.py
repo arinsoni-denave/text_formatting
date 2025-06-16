@@ -53,21 +53,19 @@ def process_file(filepath, key_path):
         print(f"Error processing {filepath}: {e}")
         return False, "Error", data
 
-def process_folder(input_folder, output_folder, key_path, log_csv='bold_removal_log.csv'):
+def process_folder(input_folder, key_path, log_csv='bold_removal_log.csv'):
     log = []
     input_folder = Path(input_folder)
-    output_folder = Path(output_folder)
     for root, dirs, files in os.walk(input_folder):
         for fname in files:
             if fname.endswith('.json'):
                 full_path = Path(root) / fname
                 changed, validation_status, new_data = process_file(str(full_path), key_path)
                 rel_path = full_path.relative_to(input_folder)
-                out_path = output_folder / rel_path
 
                 if changed:
-                    out_path.parent.mkdir(parents=True, exist_ok=True)
-                    with open(out_path, 'w', encoding='utf-8') as f:
+                    # Overwrite the original file instead of writing to output_folder
+                    with open(full_path, 'w', encoding='utf-8') as f:
                         json.dump(new_data, f, indent=2, ensure_ascii=False)
                 
                 log.append({
@@ -76,17 +74,17 @@ def process_folder(input_folder, output_folder, key_path, log_csv='bold_removal_
                     'validation_status': validation_status
                 })
 
-    log_path = output_folder / log_csv
+    # Log is saved in the input folder
+    log_path = input_folder / log_csv
     with open(log_path, 'w', newline='', encoding='utf-8') as csvfile:
         fieldnames = ['filename', 'changed', 'validation_status']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for row in log:
             writer.writerow(row)
-    print(f"Done. Changed files saved to {output_folder}. Log written to {log_path}")
+    print(f"Done. Changed files overwritten in {input_folder}. Log written to {log_path}")
 
 if __name__ == "__main__":
     input_folder = r"Test"       
-    output_folder = r"Result"      
     key_path = ['personalized narrative', 'tele scripts', 'customer engagement suite', 'objection handling']
-    process_folder(input_folder, output_folder, key_path)
+    process_folder(input_folder, key_path)
